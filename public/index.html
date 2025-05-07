@@ -46,7 +46,47 @@
       </div>
     </div>
   </div>
+<script>
+// Show login modal immediately
+$(document).ready(function() {
+    $('#loginModal').modal('show');
+});
 
+// Login function
+function login() {
+    const email = $('#loginEmail').val();
+    if (!email) return;
+
+    // Simple login (no password for demo)
+    fetch('/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            $('#loginModal').modal('hide');
+            loadAreas();
+        }
+    });
+}
+
+// Load areas after login
+function loadAreas() {
+    fetch('/areas')
+    .then(response => response.json())
+    .then(areas => {
+        $('#area').html('<option>Select Area</option>' + 
+            areas.map(a => `<option>${a}</option>`).join(''));
+        $('#area').prop('disabled', false);
+    });
+}
+
+// Add remaining dropdown logic here
+</script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="app.js"></script>
