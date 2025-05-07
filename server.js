@@ -3,21 +3,6 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Add this after initial setup
-app.use(express.json()); // Add this line before routes
-
-// Update login route
-app.post('/login', (req, res) => {
-    const { email } = req.body;
-    if (!email) {
-        return res.status(400).json({ success: false });
-    }
-    
-    // Store user in memory (for demo only)
-    users[email] = { loggedIn: true };
-    res.json({ success: true });
-});
-
 // Connect to Google Sheet
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
@@ -26,25 +11,34 @@ app.use(express.json());
 
 // Login System (Simplified)
 const users = {};
+
 app.post('/login', (req, res) => {
   const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false });
+  }
   users[email] = true;
   res.send({ success: true });
 });
 
 // Get Areas
 app.get('/areas', async (req, res) => {
-  await doc.useServiceAccountAuth({
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  });
-  
-  await doc.loadInfo();
-  const sheet = doc.sheetsByIndex[0];
-  const rows = await sheet.getRows();
-  
-  const areas = [...new Set(rows.map(row => row.Area))];
-  res.json(areas);
+  try {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    });
+    
+    await doc.loadInfo();
+    const sheet = doc.sheetsByIndex[0];
+    const rows = await sheet.getRows();
+    
+    const areas = [...new Set(rows.map(row => row.Area))];
+    res.json(areas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load areas' });
+  }
 });
 
 // Payment Integration
