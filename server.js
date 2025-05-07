@@ -1,37 +1,53 @@
 const express = require('express');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const app = express();
+const port = process.env.PORT || 3000;
+
+// Connect to Google Sheet
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
+
 app.use(express.static('public'));
 app.use(express.json());
 
-const doc = new GoogleSpreadsheet('YOUR_GOOGLE_SHEET_ID');
+// Login System (Simplified)
+const users = {};
+app.post('/login', (req, res) => {
+  const { email } = req.body;
+  users[email] = true;
+  res.send({ success: true });
+});
 
-// Login System
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const sheet = doc.sheetsById[0]; // Users sheet
-  await sheet.loadCells();
+// Get Areas
+app.get('/areas', async (req, res) => {
+  await doc.useServiceAccountAuth({
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  });
   
-  for(let i=1; i<100; i++) {
-    if(sheet.getCell(i,0).value === email && 
-       sheet.getCell(i,1).value === password) {
-      return res.send({ success: true });
-    }
-  }
-  res.send({ success: false });
-});
-
-// Get Properties Data
-app.get('/properties', async (req, res) => {
-  const sheet = doc.sheetsById[1]; // Properties sheet
+  await doc.loadInfo();
+  const sheet = doc.sheetsByIndex[0];
   const rows = await sheet.getRows();
-  res.json(rows.map(row => ({
-    area: row.Area,
-    society: row.Society,
-    flat: row.FlatNo,
-    available: row.Available
-  })));
+  
+  const areas = [...new Set(rows.map(row => row.Area))];
+  res.json(areas);
 });
 
-// Start Server
-app.listen(3000, () => console.log('Server running'));
+// Payment Integration
+app.post('/payment', (req, res) => {
+  const paymentData = {
+    key: process.env.PAYU_KEY,
+    txnid: Date.now(),
+    amount: '500.00',
+    productinfo: 'Contact Access',
+    firstname: 'Customer',
+    email: req.body.email,
+    surl: '/success',
+    furl: '/failure',
+    hash: 'TESTHASH' // Replace with actual hash in production
+  };
+  res.json(paymentData);
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
