@@ -8,6 +8,7 @@
     .header { background: #2563eb; color: white; padding: 2rem; }
     .tagline { font-size: 1.2rem; opacity: 0.9; }
     .dropdowns { max-width: 600px; margin: 2rem auto; }
+    .modal-backdrop { background-color: rgba(0,0,0,0.5); }
   </style>
 </head>
 <body>
@@ -33,62 +34,76 @@
   </div>
 
   <!-- Login Modal -->
-  <div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Login/Register</h5>
         </div>
         <div class="modal-body">
-          <input type="email" id="loginEmail" class="form-control mb-3" placeholder="Email">
+          <input type="email" id="loginEmail" class="form-control mb-3" placeholder="Email" required>
           <button onclick="login()" class="btn btn-primary w-100">Continue</button>
         </div>
       </div>
     </div>
   </div>
-<script>
-// Show login modal immediately
-$(document).ready(function() {
-    $('#loginModal').modal('show');
-});
 
-// Login function
-function login() {
-    const email = $('#loginEmail').val();
-    if (!email) return;
-
-    // Simple login (no password for demo)
-    fetch('/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            $('#loginModal').modal('hide');
-            loadAreas();
-        }
-    });
-}
-
-// Load areas after login
-function loadAreas() {
-    fetch('/areas')
-    .then(response => response.json())
-    .then(areas => {
-        $('#area').html('<option>Select Area</option>' + 
-            areas.map(a => `<option>${a}</option>`).join(''));
-        $('#area').prop('disabled', false);
-    });
-}
-
-// Add remaining dropdown logic here
-</script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="app.js"></script>
+  <script>
+  // Show login modal immediately
+  $(document).ready(function() {
+      $('#loginModal').modal('show');
+  });
+
+  // Login function
+  function login() {
+      const email = $('#loginEmail').val();
+      if (!email) {
+          alert('Please enter an email address');
+          return;
+      }
+
+      fetch('/login', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: email })
+      })
+      .then(response => {
+          if (!response.ok) throw new Error('Login failed');
+          return response.json();
+      })
+      .then(data => {
+          if (data.success) {
+              $('#loginModal').modal('hide');
+              loadAreas();
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          alert('Login failed. Please try again.');
+      });
+  }
+
+  // Load areas after login
+  function loadAreas() {
+      fetch('/areas')
+      .then(response => {
+          if (!response.ok) throw new Error('Failed to load areas');
+          return response.json();
+      })
+      .then(areas => {
+          $('#area').html('<option>Select Area</option>' + 
+              areas.map(a => `<option>${a}</option>`).join(''));
+          $('#area').prop('disabled', false);
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to load areas');
+      });
+  }
+  </script>
 </body>
 </html>
