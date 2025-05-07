@@ -3,6 +3,21 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Add this after initial setup
+app.use(express.json()); // Add this line before routes
+
+// Update login route
+app.post('/login', (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ success: false });
+    }
+    
+    // Store user in memory (for demo only)
+    users[email] = { loggedIn: true };
+    res.json({ success: true });
+});
+
 // Connect to Google Sheet
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
